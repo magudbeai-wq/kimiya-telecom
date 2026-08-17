@@ -157,6 +157,192 @@ export class SalesService {
   }
 
   /**
+   * Process a Multi-Item Scratch Card Bundle Sale with Wholesale Customer Discount (e.g. 6% Wholesale Margin)
+   * Strictly atomic and protected against overselling across multiple denominations
+   */
+  static processBundleSale(params: {
+    branchId: string;
+    items: Array<{
+      denominationId: string;
+      quantity: number;
+    }>;
+    discountPercentage?: number; // e.g. 6 (meaning 6%)
+    notes?: string;
+    actor: AuthSessionUser;
+  }) {
+    const validItems = params.items.filter((i) => i.quantity > 0);
+    if (validItems.length === 0) {
+      throw new Error('Bundle sale requires at least one item with quantity greater than zero.');
+    }
+
+    if (params.actor.role === 'SHOP_USER' && params.actor.branch_id !== params.branchId) {
+      throw new Error('Unauthorized: You can only create sales for your assigned branch.');
+    }
+
+    const discountRate = params.discountPercentage !== undefined && params.discountPercentage >= 0 
+      ? params.discountPercentage 
+      : 6.0;
+
+    return runImmediateTransaction((dbInstance) => {
+      // 1. Verify Active OPEN Business Session
+      const session = dbInstance
+        .prepare("SELECT * FROM business_sessions WHERE branch_id = ? AND status = 'OPEN'")
+        .get(params.branchId) as { id: string } | undefined;
+
+      if (!session) {
+        throw new Error(
+          'Sale rejected: No active OPEN business session found for this branch. Please open the business day first.'
+        );
+      }
+
+      const bundleId = generateTransactionId('BNDL');
+      const salesCreated: Sale[] = [];
+      let totalGross = 0;
+      let totalNet = 0;
+      let totalCostSum = 0;
+      let totalQtySum = 0;
+
+      // 2. Pre-verify stock for ALL items before making any modifications
+      for (const item of validItems) {
+        const bs = dbInstance
+          .prepare(`
+            SELECT bs.*, sd.denomination_value
+            FROM branch_stock bs
+            JOIN scratch_denominations sd ON bs.denomination_id = sd.id
+            WHERE bs.branch_id = ? AND bs.product_type = 'SCRATCH_CARD' AND bs.denomination_id = ?
+          `)
+          .get(params.branchId, item.denominationId) as (BranchStock & { denomination_value: number }) | undefined;
+
+        if (!bs || bs.quantity < item.quantity) {
+          const avail = bs ? bs.quantity : 0;
+          const denomVal = bs?.denomination_value ? `${bs.denomination_value} ETB` : 'selected denomination';
+          throw new Error(`Insufficient stock for ${denomVal}. Available: ${avail}, Requested: ${item.quantity}.`);
+        }
+      }
+
+      // 3. Process each line item
+      for (const item of validItems) {
+        const bs = dbInstance
+          .prepare(`
+            SELECT bs.*, sd.denomination_value
+            FROM branch_stock bs
+            JOIN scratch_denominations sd ON bs.denomination_id = sd.id
+            WHERE bs.branch_id = ? AND bs.product_type = 'SCRATCH_CARD' AND bs.denomination_id = ?
+          `)
+          .get(params.branchId, item.denominationId) as (BranchStock & { denomination_value: number });
+
+        const faceValue = bs.denomination_value;
+        const lineGross = faceValue * item.quantity;
+        const netUnitPrice = faceValue * (1 - discountRate / 100);
+        const lineNet = item.quantity * netUnitPrice;
+        const lineCost = item.quantity * bs.cost_price;
+        const lineProfit = lineNet - lineCost;
+
+        totalGross += lineGross;
+        totalNet += lineNet;
+        totalCostSum += lineCost;
+        totalQtySum += item.quantity;
+
+        const saleId = generateTransactionId('SALE');
+
+        dbInstance
+          .prepare(`
+            INSERT INTO sales (
+              id, session_id, branch_id, user_id, product_type, denomination_id,
+              quantity, unit_price, unit_cost, total_amount, total_cost, profit, created_at
+            ) VALUES (
+              ?, ?, ?, ?, 'SCRATCH_CARD', ?,
+              ?, ?, ?, ?, ?, ?, datetime('now', '+3 hours')
+            )
+          `)
+          .run(
+            saleId,
+            session.id,
+            params.branchId,
+            params.actor.id,
+            item.denominationId,
+            item.quantity,
+            netUnitPrice,
+            bs.cost_price,
+            lineNet,
+            lineCost,
+            lineProfit
+          );
+
+        // Deduct Stock
+        const prevQty = bs.quantity;
+        const newQty = prevQty - item.quantity;
+        dbInstance
+          .prepare("UPDATE branch_stock SET quantity = ?, updated_at = datetime('now', '+3 hours') WHERE id = ?")
+          .run(newQty, bs.id);
+
+        // Ledger entry
+        const ledgerId = `LEDGER-${crypto.randomUUID()}`;
+        dbInstance
+          .prepare(`
+            INSERT INTO stock_ledger (
+              id, transaction_id, product_type, denomination_id, movement_type,
+              source_type, source_id, destination_type, destination_id,
+              previous_quantity, change_quantity, new_quantity, user_id, notes, created_at
+            ) VALUES (
+              ?, ?, 'SCRATCH_CARD', ?, 'SALE',
+              'BRANCH', ?, 'CUSTOMER', 'CUSTOMER',
+              ?, ?, ?, ?, ?, datetime('now', '+3 hours')
+            )
+          `)
+          .run(
+            ledgerId,
+            saleId,
+            item.denominationId,
+            params.branchId,
+            prevQty,
+            -item.quantity,
+            newQty,
+            params.actor.id,
+            `Scratch Card Wholesale Bundle #${bundleId} (${discountRate}% discount)`
+          );
+
+        salesCreated.push(this.getSaleById(saleId)!);
+      }
+
+      const discountAmount = totalGross - totalNet;
+      const profit = totalNet - totalCostSum;
+
+      // Audit Log
+      AuditService.log({
+        action: 'SALE_CREATED',
+        entityType: 'SALE',
+        entityId: bundleId,
+        actorUserId: params.actor.id,
+        actorRole: params.actor.role,
+        actorBranchId: params.branchId,
+        newValues: {
+          bundleId,
+          totalGross,
+          discountRate,
+          discountAmount,
+          netAmount: totalNet,
+          totalQuantity: totalQtySum,
+          salesCount: salesCreated.length,
+        },
+      });
+
+      return {
+        success: true,
+        bundleId,
+        sales: salesCreated,
+        totalQuantity: totalQtySum,
+        grossAmount: totalGross,
+        discountPercentage: discountRate,
+        discountAmount,
+        netAmount: totalNet,
+        totalCost: totalCostSum,
+        profit,
+      };
+    });
+  }
+
+  /**
    * Get single sale by ID
    */
   static getSaleById(id: string): Sale | null {

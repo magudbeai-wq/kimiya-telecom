@@ -50,7 +50,7 @@ export function getAddisAbabaBusinessDate(date: Date = new Date()): string {
  * - SESSION-YYYYMMDD-BRCODE-XXXX
  */
 export function generateTransactionId(
-  prefix: 'IN-SIM' | 'IN-SC' | 'SIM-TR' | 'SC-TR' | 'SALE' | 'EXP' | 'SESSION',
+  prefix: 'IN-SIM' | 'IN-SC' | 'SIM-TR' | 'SC-TR' | 'SALE' | 'BNDL' | 'EXP' | 'SESSION',
   branchCode?: string
 ): string {
   const db = getDatabase();
@@ -74,7 +74,7 @@ export function generateTransactionId(
       .prepare('SELECT COUNT(*) as count FROM stock_transfers WHERE id LIKE ?')
       .get(`${searchPrefix}-%`) as { count: number };
     count = row?.count || 0;
-  } else if (prefix === 'SALE') {
+  } else if (prefix === 'SALE' || prefix === 'BNDL') {
     const row = db
       .prepare('SELECT COUNT(*) as count FROM sales WHERE id LIKE ?')
       .get(`${searchPrefix}-%`) as { count: number };

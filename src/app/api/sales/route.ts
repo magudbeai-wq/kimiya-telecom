@@ -43,16 +43,40 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    let { branchId, productType, denominationId, quantity, unitPrice } = body;
+    let { branchId, productType, denominationId, quantity, unitPrice, isBundle, items, discountPercentage } = body;
 
     // Enforce branch isolation for SHOP_USER
     if (authResult.user.role === 'SHOP_USER') {
       branchId = authResult.user.branch_id;
     }
 
-    if (!branchId || !productType || !quantity) {
+    if (!branchId) {
       return NextResponse.json(
-        { success: false, error: 'Branch ID, product type, and quantity are required.' },
+        { success: false, error: 'Branch ID is required.' },
+        { status: 400 }
+      );
+    }
+
+    // MULTI-ITEM SCRATCH BUNDLE SALE (e.g. 5, 10, 15, 20, 25, 50, 100 ETB with 6% Wholesale Discount)
+    if (isBundle && Array.isArray(items) && items.length > 0) {
+      const bundleResult = SalesService.processBundleSale({
+        branchId,
+        items,
+        discountPercentage: discountPercentage !== undefined ? parseFloat(discountPercentage) : 6.0,
+        actor: authResult.user,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Wholesale Bundle #${bundleResult.bundleId} completed (${bundleResult.totalQuantity.toLocaleString()} cards, Net: ${bundleResult.netAmount.toLocaleString()} ETB with ${bundleResult.discountPercentage}% customer margin).`,
+        bundle: bundleResult,
+      }, { status: 201 });
+    }
+
+    // SINGLE ITEM SALE
+    if (!productType || !quantity) {
+      return NextResponse.json(
+        { success: false, error: 'Product type and quantity are required.' },
         { status: 400 }
       );
     }
