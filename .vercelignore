@@ -1,0 +1,7 @@
+data/*.db-shm
+data/*.db-wal
+data/backups/
+backups/
+*.tmp
+.git
+.github

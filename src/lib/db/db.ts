@@ -29,7 +29,9 @@ export function getDatabase(): Database.Database {
   });
 
   // Critical SQLite Pragmas for High Concurrency, ACID safety, and Integrity
-  db.pragma('journal_mode = WAL');
+  // In Vercel serverless / build trace, avoid -shm/-wal transient files with DELETE mode
+  const journalMode = process.env.VERCEL ? 'DELETE' : 'WAL';
+  db.pragma(`journal_mode = ${journalMode}`);
   db.pragma('synchronous = NORMAL');
   db.pragma('foreign_keys = ON');
   db.pragma('busy_timeout = 10000'); // 10 seconds wait on concurrent locks
