@@ -26,12 +26,6 @@ export default function LoginPage() {
     setLoading(false);
   };
 
-  const handleQuickFill = (u: string, p = 'Password@123') => {
-    setUsername(u);
-    setPassword(p);
-    setError(null);
-  };
-
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-950 to-blue-950 px-4 py-8 relative overflow-hidden">
       {/* Background Decorative Glow */}
@@ -97,7 +91,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl text-xs shadow-lg shadow-blue-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl text-xs shadow-lg shadow-blue-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
               <div className="h-4 w-4 border-2 border-white border-t-transparent animate-spin rounded-full"></div>
@@ -110,42 +104,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Quick Demo Accounts Selection */}
-        <div className="mt-8 pt-6 border-t border-slate-800/80">
-          <p className="text-[11px] font-bold tracking-wider text-slate-400 uppercase text-center mb-3">
-            Quick-Login Demo Accounts
+        <div className="mt-8 text-center border-t border-slate-800/80 pt-4">
+          <p className="text-[11px] text-slate-500">
+            Secure Authorized Access Only &bull; Kimiya Telecom &copy; {new Date().getFullYear()}
           </p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickFill('admin')}
-              className="p-2.5 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-xl text-center transition-all group"
-            >
-              <div className="text-[11px] font-bold text-blue-400 group-hover:text-blue-300">Admin</div>
-              <div className="text-[9px] text-slate-400">Headquarters</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFill('finance')}
-              className="p-2.5 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-xl text-center transition-all group"
-            >
-              <div className="text-[11px] font-bold text-emerald-400 group-hover:text-emerald-300">Finance</div>
-              <div className="text-[9px] text-slate-400">Central Store</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickFill('ahmed_kar')}
-              className="p-2.5 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-xl text-center transition-all group"
-            >
-              <div className="text-[11px] font-bold text-amber-400 group-hover:text-amber-300">Shop User</div>
-              <div className="text-[9px] text-slate-400">Karamardha</div>
-            </button>
-          </div>
-          <div className="mt-2 text-center">
-            <p className="text-[10px] text-slate-500">
-              Default password: <span className="text-slate-300 font-mono">Password@123</span>
-            </p>
-          </div>
         </div>
       </div>
     </div>

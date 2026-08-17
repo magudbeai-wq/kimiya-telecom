@@ -30,6 +30,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
+  User as UserIcon,
+  KeyRound,
 } from 'lucide-react';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -84,6 +86,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       { label: 'Report Center', href: '/reports', icon: FileSpreadsheet },
       { label: 'Audit Logs', href: '/audit', icon: ShieldCheck },
       { label: 'Backups & DR', href: '/backups', icon: HardDrive },
+      { label: 'Profile & Security', href: '/profile', icon: KeyRound },
     ];
   } else if (user?.role === 'FINANCE') {
     navItems = [
@@ -100,6 +103,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       { label: 'Report Center', href: '/reports', icon: FileSpreadsheet },
       { label: 'Audit Logs', href: '/audit', icon: ShieldCheck },
       { label: 'Backups & DR', href: '/backups', icon: HardDrive },
+      { label: 'Profile & Security', href: '/profile', icon: KeyRound },
     ];
   } else if (user?.role === 'SHOP_USER') {
     navItems = [
@@ -113,6 +117,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       { label: 'SIM Card Hub', href: '/sim', icon: Smartphone },
       { label: 'Scratch Card Hub', href: '/scratch', icon: CreditCard },
       { label: 'Branch Reports', href: '/reports', icon: FileSpreadsheet },
+      { label: 'Profile & Security', href: '/profile', icon: KeyRound },
     ];
   }
 
@@ -165,22 +170,37 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* User Card & Logout Bottom */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-200">
+            <Link
+              href="/profile"
+              className="flex items-center gap-2.5 overflow-hidden hover:opacity-80 transition-opacity flex-1 min-w-0"
+              title="Click to view and edit Profile / Password"
+            >
+              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
                 {user?.full_name?.charAt(0) || 'U'}
               </div>
               <div className="truncate">
                 <p className="text-xs font-semibold truncate text-slate-900 dark:text-white">{user?.full_name}</p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate capitalize">{user?.role?.toLowerCase()}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate capitalize">
+                  @{user?.username} &bull; {user?.role?.toLowerCase()}
+                </p>
               </div>
+            </Link>
+            <div className="flex items-center gap-1">
+              <Link
+                href="/profile"
+                title="Account & Security Settings"
+                className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-lg"
+              >
+                <KeyRound className="h-4 w-4" />
+              </Link>
+              <button
+                onClick={logout}
+                title="Logout"
+                className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors rounded-lg"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
-            <button
-              onClick={logout}
-              title="Logout"
-              className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
           </div>
         </div>
       </aside>
@@ -221,8 +241,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          {/* Right Controls: Notifications, Dark mode, Logout */}
+          {/* Right Controls: Profile, Notifications, Dark mode, Logout */}
           <div className="flex items-center gap-2">
+            {/* Account Settings / Profile */}
+            <Link
+              href="/profile"
+              title="My Account & Password Settings"
+              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <KeyRound className="h-5 w-5" />
+            </Link>
+
             {/* Notification Bell */}
             <button
               onClick={() => setNotifDrawerOpen(true)}
