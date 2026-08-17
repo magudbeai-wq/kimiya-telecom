@@ -85,7 +85,9 @@ export default function SalesPage() {
         setUnitPrice(String(selected.denomination_value));
       }
     } else {
-      setUnitPrice('50.00');
+      if (!unitPrice || isNaN(parseFloat(unitPrice))) {
+        setUnitPrice('50.00');
+      }
     }
   }, [productType, selectedDenomId, denominations]);
 
@@ -208,7 +210,10 @@ export default function SalesPage() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setProductType('SIM')}
+              onClick={() => {
+                setProductType('SIM');
+                if (!unitPrice || unitPrice === '0') setUnitPrice('50.00');
+              }}
               className={`p-3 rounded-xl border text-center font-bold text-xs flex items-center justify-center gap-2 transition-all ${
                 productType === 'SIM'
                   ? 'bg-blue-600 text-white border-blue-600 shadow'
@@ -216,7 +221,7 @@ export default function SalesPage() {
               }`}
             >
               <Smartphone className="h-4 w-4" />
-              SIM Card (50 ETB)
+              SIM Cards
             </button>
             <button
               type="button"
@@ -233,6 +238,34 @@ export default function SalesPage() {
           </div>
 
           <form onSubmit={handleSaleSubmit} className="space-y-4">
+            {/* SIM Card Custom Selling Price Input */}
+            {productType === 'SIM' && (
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    SIM Card Selling Price (ETB)
+                  </label>
+                  <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
+                    Editable Unit Price
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.50"
+                    min="0.01"
+                    value={unitPrice}
+                    onChange={(e) => setUnitPrice(e.target.value)}
+                    placeholder="e.g. 50.00"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 pr-14"
+                    required
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-xs font-black text-slate-400">
+                    ETB
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Scratch Denomination Selector if Scratch selected */}
             {productType === 'SCRATCH_CARD' && (
               <div>
