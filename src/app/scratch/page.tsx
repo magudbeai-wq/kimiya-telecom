@@ -969,33 +969,52 @@ export default function ScratchCardsPage() {
             </form>
           </div>
 
-          <div className="lg:col-span-2 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4">Recent Scratch Card Sales</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+          {/* Right Column: Recent Scratch Sales Table */}
+          <div className="lg:col-span-5 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Recent Scratch Card Sales</h3>
+              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
+                {sales.length} transactions
+              </span>
+            </div>
+
+            <div className="overflow-x-auto scrollbar-thin">
+              <table className="w-full text-left text-xs min-w-[340px]">
                 <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 font-bold uppercase border-y border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="py-2.5 px-3">Sale ID</th>
-                    <th className="py-2.5 px-3">Denomination</th>
-                    <th className="py-2.5 px-3">Branch</th>
+                    <th className="py-2.5 px-3">Denom</th>
                     <th className="py-2.5 px-3">Qty</th>
-                    <th className="py-2.5 px-3">Total (ETB)</th>
-                    <th className="py-2.5 px-3">Profit</th>
+                    <th className="py-2.5 px-3">Total Cash</th>
                     <th className="py-2.5 px-3">Time</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {sales.map((s) => (
-                    <tr key={s.id}>
-                      <td className="py-2.5 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">{s.id}</td>
-                      <td className="py-2.5 px-3 font-bold">{s.denomination_value} ETB</td>
-                      <td className="py-2.5 px-3">{s.branch_name}</td>
-                      <td className="py-2.5 px-3 font-bold">{s.quantity}</td>
-                      <td className="py-2.5 px-3 font-black text-slate-900 dark:text-white">{s.total_amount?.toLocaleString()}</td>
-                      <td className="py-2.5 px-3 text-emerald-600 font-bold">+{s.profit?.toLocaleString()}</td>
-                      <td className="py-2.5 px-3">{s.created_at?.substring(11, 16)}</td>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                  {sales.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-slate-400 text-xs">
+                        No sales recorded yet today.
+                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    sales.slice(0, 15).map((s) => (
+                      <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                        <td className="py-2.5 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          {s.id}
+                        </td>
+                        <td className="py-2.5 px-3 font-bold text-slate-800 dark:text-slate-200">
+                          {s.denomination_value} ETB
+                        </td>
+                        <td className="py-2.5 px-3 font-bold">{s.quantity?.toLocaleString()}</td>
+                        <td className="py-2.5 px-3 font-black text-slate-900 dark:text-white">
+                          {s.total_amount?.toLocaleString()} ETB
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-400 text-[11px]">
+                          {s.created_at?.substring(11, 16)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
