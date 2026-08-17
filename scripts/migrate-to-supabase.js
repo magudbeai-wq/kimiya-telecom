@@ -61,8 +61,12 @@ async function migrateData() {
       if (m.supabaseTable === 'scratch_denominations' && typeof copy.is_active === 'number') {
         copy.is_active = Boolean(copy.is_active);
       }
-      if (m.supabaseTable === 'system_notifications' && typeof copy.is_read === 'number') {
-        copy.is_read = Boolean(copy.is_read);
+      if (m.supabaseTable === 'system_notifications') {
+        if (typeof copy.is_read === 'number') {
+          copy.is_read = Boolean(copy.is_read);
+        }
+        if (copy.type === 'TRANSFER_SENT') copy.type = 'NEW_TRANSFER';
+        if (copy.type === 'SESSION_CLOSED' || copy.type === 'SESSION_OPENED') copy.type = 'SESSION_ALERT';
       }
       if (m.supabaseTable === 'audit_logs') {
         if (copy.old_values && typeof copy.old_values === 'string') {

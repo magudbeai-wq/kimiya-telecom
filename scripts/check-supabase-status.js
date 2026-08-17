@@ -18,8 +18,8 @@ const TABLES = [
   'expenses',
   'stock_reconciliations',
   'audit_logs',
-  'notifications',
-  'incoming_stock',
+  'system_notifications',
+  'stock_incoming',
 ];
 
 async function checkSupabaseStatus() {
