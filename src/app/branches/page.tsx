@@ -226,9 +226,18 @@ export default function BranchesPage() {
 
       {/* CREATE BRANCH MODAL */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="font-black text-sm text-slate-900 dark:text-white">Create New Branch</h3>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 py-8">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full max-h-[88vh] overflow-y-auto shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-black text-sm text-slate-900 dark:text-white">Create New Branch</h3>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              >
+                ✕
+              </button>
+            </div>
 
             <form onSubmit={handleCreateSubmit} className="space-y-4">
               <div>
@@ -290,9 +299,18 @@ export default function BranchesPage() {
 
       {/* EDIT BRANCH MODAL */}
       {editBranch && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="font-black text-sm text-slate-900 dark:text-white">Edit Branch: {editBranch.name}</h3>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 py-8">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full max-h-[88vh] overflow-y-auto shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-black text-sm text-slate-900 dark:text-white">Edit Branch: {editBranch.name}</h3>
+              <button
+                type="button"
+                onClick={() => setEditBranch(null)}
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              >
+                ✕
+              </button>
+            </div>
 
             <form onSubmit={handleUpdateSubmit} className="space-y-4">
               <div>

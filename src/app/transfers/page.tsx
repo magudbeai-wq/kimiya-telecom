@@ -645,31 +645,40 @@ export default function TransfersPage() {
 
       {/* REJECTION MODAL */}
       {rejectModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300">
-                <XCircle className="h-6 w-6" />
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 py-8">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full max-h-[88vh] overflow-y-auto shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300">
+                  <XCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                    Reject Shipment #{selectedTransferForReject?.id}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Stock will NOT enter branch inventory.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-black text-sm text-slate-900 dark:text-white">
-                  Reject Shipment #{selectedTransferForReject?.id}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Rejecting will NOT increase branch stock. Finance will be notified for review.
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setRejectModalOpen(false)}
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              >
+                ✕
+              </button>
             </div>
 
             <form onSubmit={handleRejectSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Mandatory Rejection Reason
                 </label>
                 <select
                   value={rejectReasonCode}
                   onChange={(e) => setRejectReasonCode(e.target.value as any)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none focus:border-rose-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-rose-500 shadow-sm"
                   required
                 >
                   <option value="WRONG_QUANTITY">Wrong Quantity Received</option>
@@ -682,7 +691,7 @@ export default function TransfersPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Explanation / Remarks {rejectReasonCode === 'OTHER' && <span className="text-rose-500">*</span>}
                 </label>
                 <textarea
@@ -690,22 +699,22 @@ export default function TransfersPage() {
                   onChange={(e) => setRejectReasonText(e.target.value)}
                   rows={3}
                   placeholder="Provide explicit details regarding the rejection..."
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-rose-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-rose-500"
                   required={rejectReasonCode === 'OTHER'}
                 ></textarea>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setRejectModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow transition-colors"
+                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-md transition-colors"
                 >
                   Confirm Rejection
                 </button>
@@ -717,27 +726,36 @@ export default function TransfersPage() {
 
       {/* FINANCE REVIEW MODAL */}
       {reviewModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
-                <RotateCcw className="h-6 w-6" />
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 py-8">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full max-h-[88vh] overflow-y-auto shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
+                  <RotateCcw className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                    Finance Review: #{selectedTransferForReview?.id}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">Correct shipment, resend, or cancel.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-black text-sm text-slate-900 dark:text-white">
-                  Finance Review: Transfer #{selectedTransferForReview?.id}
-                </h3>
-                <p className="text-xs text-slate-500">Correct shipment, resend, or cancel.</p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setReviewModalOpen(false)}
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              >
+                ✕
+              </button>
             </div>
 
             <form onSubmit={handleReviewSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Resolution Action</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Resolution Action</label>
                 <select
                   value={reviewAction}
                   onChange={(e) => setReviewAction(e.target.value as any)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 shadow-sm"
                   required
                 >
                   <option value="RESEND">Resend Corrected Shipment (Generates new transfer linked to this ID)</option>
@@ -748,40 +766,40 @@ export default function TransfersPage() {
 
               {reviewAction === 'RESEND' && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Corrected Quantity</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Corrected Quantity</label>
                   <input
                     type="number"
                     min="1"
                     value={correctedQty}
                     onChange={(e) => setCorrectedQty(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                     required
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Finance Review Notes</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Finance Review Notes</label>
                 <textarea
                   value={reviewNotes}
                   onChange={(e) => setReviewNotes(e.target.value)}
                   rows={3}
                   placeholder="Notes regarding this review decision..."
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                 ></textarea>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setReviewModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
                 >
                   Close
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition-colors"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-colors"
                 >
                   Execute Review Action
                 </button>

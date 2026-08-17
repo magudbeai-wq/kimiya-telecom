@@ -144,18 +144,18 @@ export default function AuditLogsPage() {
 
       {/* JSON Payload Diff Modal */}
       {selectedLog && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 py-8">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-lg w-full max-h-[88vh] overflow-y-auto shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Code2 className="h-5 w-5 text-blue-600" />
                 <h3 className="font-bold text-sm text-slate-900 dark:text-white">Audit Event Details</h3>
               </div>
               <button
                 onClick={() => setSelectedLog(null)}
-                className="text-xs font-bold text-slate-400 hover:text-slate-600"
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
               >
-                Close
+                ✕
               </button>
             </div>
 

@@ -31,7 +31,7 @@ export default function UsersPage() {
 
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const fetchUsers = async () => {
+  const fetchUsersAndBranches = async () => {
     try {
       setLoading(true);
       const [uRes, bRes] = await Promise.all([
@@ -45,21 +45,41 @@ export default function UsersPage() {
       }
       if (bRes.ok) {
         const json = await bRes.json();
-        setBranches(json.branches || []);
-        if (json.branches.length > 0 && !branchId) {
-          setBranchId(json.branches[0].id);
+        const branchData = json.branches || [];
+        setBranches(branchData);
+        if (branchData.length > 0 && !branchId) {
+          setBranchId(branchData[0].id);
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load users or branches:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsersAndBranches();
   }, []);
+
+  const handleOpenCreateModal = async () => {
+    if (branches.length === 0) {
+      try {
+        const res = await fetch('/api/branches');
+        if (res.ok) {
+          const json = await res.json();
+          const list = json.branches || [];
+          setBranches(list);
+          if (list.length > 0) setBranchId(list[0].id);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    } else if (!branchId && branches.length > 0) {
+      setBranchId(branches[0].id);
+    }
+    setModalOpen(true);
+  };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +105,7 @@ export default function UsersPage() {
         setEmail('');
         setPassword('');
         setModalOpen(false);
-        await fetchUsers();
+        await fetchUsersAndBranches();
       } else {
         setMessage({ type: 'error', text: data.error });
       }
@@ -116,7 +136,7 @@ export default function UsersPage() {
       if (data.success) {
         setMessage({ type: 'success', text: `User '${data.user.full_name}' updated successfully.` });
         setEditUser(null);
-        await fetchUsers();
+        await fetchUsersAndBranches();
       } else {
         setMessage({ type: 'error', text: data.error });
       }
@@ -126,7 +146,7 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
@@ -137,14 +157,14 @@ export default function UsersPage() {
             <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">User Accounts & RBAC</h1>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Individual user accounts with strict role-based access control and branch assignment. No shared accounts.
+            Individual user accounts with strict role-based access control and branch assignment.
           </p>
         </div>
 
         {user?.role === 'ADMIN' && (
           <button
-            onClick={() => setModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow flex items-center gap-2 transition-colors"
+            onClick={handleOpenCreateModal}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow flex items-center gap-2 transition-colors"
           >
             <Plus className="h-4 w-4" />
             Create User Account
@@ -207,7 +227,7 @@ export default function UsersPage() {
                       {u.role}
                     </span>
                   </td>
-                  <td className="py-3 px-4 font-bold">{u.branch_name || 'Headquarters / All'}</td>
+                  <td className="py-3 px-4 font-bold text-slate-800 dark:text-slate-200">{u.branch_name || 'Company-wide'}</td>
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -229,7 +249,7 @@ export default function UsersPage() {
                           setEditEmail(u.email);
                           setEditPassword('');
                           setEditRole(u.role);
-                          setEditBranchId(u.branch_id || '');
+                          setEditBranchId(u.branch_id || (branches[0]?.id || ''));
                           setEditStatus(u.status);
                         }}
                         className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1"
@@ -248,65 +268,77 @@ export default function UsersPage() {
 
       {/* CREATE USER MODAL */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="font-black text-sm text-slate-900 dark:text-white">Create Personnel Account</h3>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 py-8">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-lg w-full max-h-[88vh] overflow-y-auto shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                <h3 className="font-black text-sm text-slate-900 dark:text-white">Create Personnel Account</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              >
+                ✕
+              </button>
+            </div>
 
-            <form onSubmit={handleCreateSubmit} className="space-y-3">
+            <form onSubmit={handleCreateSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Username</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Username</label>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="e.g. ahmed_ali"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Full Name</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Ahmed Ali"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Email</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. ahmed@kimiya.com"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Password</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Password</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min 6 characters"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  placeholder="Minimum 6 characters"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">System Role</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">System Role</label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as any)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                   required
                 >
                   <option value="SHOP_USER">SHOP USER (Assigned to one branch)</option>
@@ -316,32 +348,43 @@ export default function UsersPage() {
               </div>
 
               {role === 'SHOP_USER' && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Assigned Branch</label>
+                <div className="p-3.5 bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 rounded-xl space-y-1.5">
+                  <label className="block text-xs font-black text-blue-900 dark:text-blue-200">
+                    Assigned Retail Branch <span className="text-rose-500">*</span>
+                  </label>
                   <select
                     value={branchId}
                     onChange={(e) => setBranchId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 shadow-sm"
                     required
                   >
-                    {branches.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
-                    ))}
+                    {branches.length === 0 ? (
+                      <option value="">Loading branches...</option>
+                    ) : (
+                      branches.map((b) => (
+                        <option key={b.id} value={b.id} className="text-slate-900 dark:text-white py-1">
+                          {b.name} ({b.code}) — {b.location}
+                        </option>
+                      ))
+                    )}
                   </select>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    This user will only have POS and inventory access to this specific branch.
+                  </p>
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition-colors"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-colors"
                 >
                   Create User
                 </button>
@@ -353,50 +396,61 @@ export default function UsersPage() {
 
       {/* EDIT USER MODAL */}
       {editUser && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="font-black text-sm text-slate-900 dark:text-white">Edit User: @{editUser.username}</h3>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 py-8">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-lg w-full max-h-[88vh] overflow-y-auto shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-black text-sm text-slate-900 dark:text-white">Edit User: @{editUser.username}</h3>
+              <button
+                type="button"
+                onClick={() => setEditUser(null)}
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              >
+                ✕
+              </button>
+            </div>
 
-            <form onSubmit={handleUpdateSubmit} className="space-y-3">
+            <form onSubmit={handleUpdateSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Full Name</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
                 <input
                   type="text"
                   value={editFullName}
                   onChange={(e) => setEditFullName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Email</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
                 <input
                   type="email"
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">New Password (Leave blank to keep current)</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Change Password <span className="font-normal text-slate-400">(leave blank to keep current)</span>
+                </label>
                 <input
                   type="password"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
-                  placeholder="Leave empty if unchanged"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  placeholder="Enter new password to update"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Role</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">System Role</label>
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value as any)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                   required
                 >
                   <option value="SHOP_USER">SHOP USER</option>
@@ -406,44 +460,48 @@ export default function UsersPage() {
               </div>
 
               {editRole === 'SHOP_USER' && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Branch</label>
+                <div className="p-3.5 bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 rounded-xl space-y-1.5">
+                  <label className="block text-xs font-black text-blue-900 dark:text-blue-200">
+                    Assigned Retail Branch
+                  </label>
                   <select
                     value={editBranchId}
                     onChange={(e) => setEditBranchId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 shadow-sm"
                     required
                   >
                     {branches.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+                      <option key={b.id} value={b.id}>
+                        {b.name} ({b.code}) — {b.location}
+                      </option>
                     ))}
                   </select>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Status</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Account Status</label>
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value as any)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                 >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="DISABLED">DISABLED</option>
+                  <option value="ACTIVE">ACTIVE (Can log in)</option>
+                  <option value="DISABLED">DISABLED / BANNED (Access blocked)</option>
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setEditUser(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition-colors"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition-colors"
                 >
                   Save Changes
                 </button>
