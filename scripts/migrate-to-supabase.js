@@ -19,44 +19,52 @@ async function migrateData() {
 
   const sqlite = new Database(DB_PATH);
 
-  const tables = [
-    { name: 'scratch_denominations', pk: 'id' },
-    { name: 'branches', pk: 'id' },
-    { name: 'users', pk: 'id' },
-    { name: 'central_stock', pk: 'id' },
-    { name: 'branch_stock', pk: 'id' },
-    { name: 'stock_incoming', pk: 'id' },
-    { name: 'stock_transfers', pk: 'id' },
-    { name: 'stock_ledger', pk: 'id' },
-    { name: 'business_sessions', pk: 'id' },
-    { name: 'sales', pk: 'id' },
-    { name: 'expenses', pk: 'id' },
-    { name: 'system_notifications', pk: 'id' },
-    { name: 'audit_logs', pk: 'id' },
-    { name: 'database_backups', pk: 'id' },
+  // Migration mapping (local table -> remote Supabase table)
+  const migrationMap = [
+    { sqliteTable: 'scratch_denominations', supabaseTable: 'scratch_denominations', pk: 'id' },
+    { sqliteTable: 'branches', supabaseTable: 'branches', pk: 'id' },
+    { sqliteTable: 'users', supabaseTable: 'users', pk: 'id' },
+    { sqliteTable: 'central_stock', supabaseTable: 'central_stock', pk: 'id' },
+    { sqliteTable: 'branch_stock', supabaseTable: 'branch_stock', pk: 'id' },
+    { sqliteTable: 'incoming_stock', supabaseTable: 'stock_incoming', pk: 'id' },
+    { sqliteTable: 'stock_transfers', supabaseTable: 'stock_transfers', pk: 'id' },
+    { sqliteTable: 'stock_ledger', supabaseTable: 'stock_ledger', pk: 'id' },
+    { sqliteTable: 'business_sessions', supabaseTable: 'business_sessions', pk: 'id' },
+    { sqliteTable: 'sales', supabaseTable: 'sales', pk: 'id' },
+    { sqliteTable: 'expenses', supabaseTable: 'expenses', pk: 'id' },
+    { sqliteTable: 'notifications', supabaseTable: 'system_notifications', pk: 'id' },
+    { sqliteTable: 'audit_logs', supabaseTable: 'audit_logs', pk: 'id' },
+    { sqliteTable: 'database_backups', supabaseTable: 'database_backups', pk: 'id' },
   ];
 
   let totalMigratedRows = 0;
 
-  for (const t of tables) {
-    const rows = sqlite.prepare(`SELECT * FROM ${t.name}`).all();
-    console.log(`[MIGRATING] Table '${t.name}': Found ${rows.length} rows in SQLite...`);
+  for (const m of migrationMap) {
+    let rows = [];
+    try {
+      rows = sqlite.prepare(`SELECT * FROM ${m.sqliteTable}`).all();
+    } catch (e) {
+      console.log(`[SKIP] Local table '${m.sqliteTable}' does not exist or has 0 rows.`);
+      continue;
+    }
+
+    console.log(`[MIGRATING] '${m.sqliteTable}' -> Supabase '${m.supabaseTable}' (${rows.length} rows)...`);
 
     if (rows.length === 0) {
       console.log(`  -> 0 rows to transfer.`);
       continue;
     }
 
-    // Format boolean and json fields if necessary
+    // Format boolean and json fields
     const formattedRows = rows.map((r) => {
       const copy = { ...r };
-      if (t.name === 'scratch_denominations' && typeof copy.is_active === 'number') {
+      if (m.supabaseTable === 'scratch_denominations' && typeof copy.is_active === 'number') {
         copy.is_active = Boolean(copy.is_active);
       }
-      if (t.name === 'system_notifications' && typeof copy.is_read === 'number') {
+      if (m.supabaseTable === 'system_notifications' && typeof copy.is_read === 'number') {
         copy.is_read = Boolean(copy.is_read);
       }
-      if (t.name === 'audit_logs') {
+      if (m.supabaseTable === 'audit_logs') {
         if (copy.old_values && typeof copy.old_values === 'string') {
           try { copy.old_values = JSON.parse(copy.old_values); } catch (e) {}
         }
@@ -71,14 +79,13 @@ async function migrateData() {
     const chunkSize = 50;
     for (let i = 0; i < formattedRows.length; i += chunkSize) {
       const chunk = formattedRows.slice(i, i + chunkSize);
-      const { data, error } = await supabase.from(t.name).upsert(chunk, { onConflict: t.pk });
+      const { error } = await supabase.from(m.supabaseTable).upsert(chunk, { onConflict: m.pk });
 
       if (error) {
-        console.error(`  [ERROR] Upsert failed for table '${t.name}':`, error.message);
-        console.error('  Details:', error);
+        console.error(`  [ERROR] Upsert failed for '${m.supabaseTable}':`, error.message);
       } else {
         totalMigratedRows += chunk.length;
-        console.log(`  -> Successfully upserted ${chunk.length} rows into Supabase '${t.name}'`);
+        console.log(`  -> Successfully upserted ${chunk.length} rows into Supabase '${m.supabaseTable}'`);
       }
     }
   }

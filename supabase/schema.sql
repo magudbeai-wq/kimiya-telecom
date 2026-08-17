@@ -257,6 +257,25 @@ CREATE INDEX IF NOT EXISTS idx_sales_session ON sales(session_id);
 CREATE INDEX IF NOT EXISTS idx_sales_branch_date ON sales(branch_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_business_sessions_branch_status ON business_sessions(branch_id, status);
 CREATE INDEX IF NOT EXISTS idx_stock_ledger_txn ON stock_ledger(transaction_id);
-CREATE INDEX IF NOT EXISTS idx_stock_ledger_movement ON stock_ledger(movement_type, created_at);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action, created_at);
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON system_notifications(recipient_user_id, recipient_role, is_read);
+
+-- ------------------------------------------------------------------------------
+-- 16. PERMISSIONS & ROW LEVEL SECURITY CONFIGURATION
+-- ------------------------------------------------------------------------------
+ALTER TABLE business_sessions ADD COLUMN IF NOT EXISTS closing_override_by VARCHAR(50);
+
+ALTER TABLE branches DISABLE ROW LEVEL SECURITY;
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE scratch_denominations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE central_stock DISABLE ROW LEVEL SECURITY;
+ALTER TABLE branch_stock DISABLE ROW LEVEL SECURITY;
+ALTER TABLE stock_incoming DISABLE ROW LEVEL SECURITY;
+ALTER TABLE stock_transfers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE stock_ledger DISABLE ROW LEVEL SECURITY;
+ALTER TABLE business_sessions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE sales DISABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses DISABLE ROW LEVEL SECURITY;
+ALTER TABLE system_notifications DISABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE database_backups DISABLE ROW LEVEL SECURITY;
+
