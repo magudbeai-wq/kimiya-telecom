@@ -142,7 +142,7 @@ export class TransferService {
 
       if (transfer.status !== 'SENT') {
         throw new Error(
-          `Transfer #${transferId} cannot be approved because its current status is '${transfer.status}'.`
+          `Duplicate Refused: Transfer #${transferId} cannot be approved because its current status is '${transfer.status}'. Only newly dispatched 'SENT' transfers can be approved.`
         );
       }
 
@@ -345,7 +345,7 @@ export class TransferService {
 
       if (transfer.status !== 'SENT') {
         throw new Error(
-          `Transfer #${params.transferId} cannot be rejected because its current status is '${transfer.status}'.`
+          `Duplicate Refused: Transfer #${params.transferId} cannot be rejected because its current status is '${transfer.status}'. Only newly dispatched 'SENT' transfers can be rejected.`
         );
       }
 

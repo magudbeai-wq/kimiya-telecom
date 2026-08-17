@@ -22,6 +22,7 @@ export default function SessionsPage() {
   const [openingNotes, setOpeningNotes] = useState('');
   const [closingNotes, setClosingNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchSessions = async () => {
@@ -43,10 +44,12 @@ export default function SessionsPage() {
     fetchSessions();
   }, [user]);
 
-  // Handle Open Day
+  // Handle Open Day (Protected against duplicate submissions)
   const handleOpenDay = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     try {
+      setSubmitting(true);
       setMessage(null);
       const res = await fetch('/api/sessions/open', {
         method: 'POST',
@@ -67,14 +70,17 @@ export default function SessionsPage() {
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // Handle Close Day
+  // Handle Close Day (Protected against duplicate submissions)
   const handleCloseDay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeSession) return;
+    if (!activeSession || submitting) return;
     try {
+      setSubmitting(true);
       setMessage(null);
       const res = await fetch('/api/sessions/close', {
         method: 'POST',
@@ -95,6 +101,8 @@ export default function SessionsPage() {
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -198,10 +206,11 @@ export default function SessionsPage() {
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"
+                  disabled={submitting}
+                  className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <Lock className="h-4 w-4" />
-                  Close Business Day & Calculate Totals
+                  {submitting ? 'Processing Close Day...' : 'Close Business Day & Calculate Totals'}
                 </button>
               </form>
             </div>
@@ -227,10 +236,11 @@ export default function SessionsPage() {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"
+                disabled={submitting}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Unlock className="h-4 w-4" />
-                Open Business Day for Today
+                {submitting ? 'Opening Business Day...' : 'Open Business Day for Today'}
               </button>
             </form>
           )}

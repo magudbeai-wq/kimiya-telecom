@@ -49,18 +49,31 @@ export class BusinessSessionService {
         throw new Error('Branch not found or is currently disabled.');
       }
 
-      // 2. Check if an open session already exists
+      // 2. Check if an open session already exists (Strict Duplicate Refusal)
       const existing = dbInstance
         .prepare("SELECT * FROM business_sessions WHERE branch_id = ? AND status = 'OPEN'")
         .get(params.branchId) as BusinessSession | undefined;
 
       if (existing) {
-        throw new Error(`An open business session (${existing.id}) is already active for branch ${branch.name}.`);
+        throw new Error(
+          `Duplicate Refused: An active OPEN business session (#${existing.id}) is already running for branch '${branch.name}'. You cannot open multiple concurrent sessions.`
+        );
+      }
+
+      // Check if a business session has already been recorded for today for this branch
+      const businessDate = getAddisAbabaBusinessDate();
+      const existingForToday = dbInstance
+        .prepare('SELECT * FROM business_sessions WHERE branch_id = ? AND business_date = ?')
+        .get(params.branchId, businessDate) as BusinessSession | undefined;
+
+      if (existingForToday) {
+        throw new Error(
+          `Duplicate Refused: A business session (#${existingForToday.id}) has already been created for branch '${branch.name}' on today (${businessDate}). Only one session per calendar day is permitted.`
+        );
       }
 
       // 3. Generate Session ID e.g. SESSION-20260817-KAR-0001
       const sessionId = generateTransactionId('SESSION', branch.code);
-      const businessDate = getAddisAbabaBusinessDate();
 
       // 4. Insert Session Record
       dbInstance
@@ -129,7 +142,9 @@ export class BusinessSessionService {
       }
 
       if (session.status === 'CLOSED') {
-        throw new Error(`Business session #${params.sessionId} is already closed.`);
+        throw new Error(
+          `Duplicate Refused: Business session #${params.sessionId} is already CLOSED (closed at ${session.closed_at}). Duplicate close operations are strictly rejected.`
+        );
       }
 
       // Branch authorization check
