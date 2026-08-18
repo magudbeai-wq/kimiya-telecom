@@ -60,7 +60,7 @@ async function seed() {
     }
     console.log('[KIMIYA DB] Scratch Denominations seeded.');
 
-    // 3. Central Store Stock
+    // 3. Central Store Stock (All Initial Stocks set to 0)
     const insertCentralStock = db.prepare(`
       INSERT INTO central_stock (
         id, product_type, denomination_id, quantity, cost_price, selling_price, low_stock_threshold, updated_at
@@ -73,18 +73,18 @@ async function seed() {
         updated_at = excluded.updated_at
     `);
 
-    // SIM Cards in Central Store: 10,000 cards
-    insertCentralStock.run('CS-SIM', 'SIM', null, 10000, 30.0, 50.0, 500);
+    // SIM Cards in Central Store: 0 initial cards
+    insertCentralStock.run('CS-SIM', 'SIM', null, 0, 30.0, 50.0, 500);
 
-    // Scratch Cards in Central Store
+    // Scratch Cards in Central Store (0 initial quantity)
     const centralScratchStock = [
-      { denomId: 'DENOM-5', qty: 10000, value: 5 },
-      { denomId: 'DENOM-10', qty: 20000, value: 10 },
-      { denomId: 'DENOM-15', qty: 5000, value: 15 },
-      { denomId: 'DENOM-20', qty: 8000, value: 20 },
-      { denomId: 'DENOM-25', qty: 5000, value: 25 },
-      { denomId: 'DENOM-50', qty: 20000, value: 50 },
-      { denomId: 'DENOM-100', qty: 2000, value: 100 },
+      { denomId: 'DENOM-5', qty: 0, value: 5 },
+      { denomId: 'DENOM-10', qty: 0, value: 10 },
+      { denomId: 'DENOM-15', qty: 0, value: 15 },
+      { denomId: 'DENOM-20', qty: 0, value: 20 },
+      { denomId: 'DENOM-25', qty: 0, value: 25 },
+      { denomId: 'DENOM-50', qty: 0, value: 50 },
+      { denomId: 'DENOM-100', qty: 0, value: 100 },
     ];
 
     for (const item of centralScratchStock) {
@@ -98,9 +98,9 @@ async function seed() {
         1000
       );
     }
-    console.log('[KIMIYA DB] Central Store Stock seeded.');
+    console.log('[KIMIYA DB] Central Store Stock seeded with 0 quantity.');
 
-    // 4. Branch Stock for all branches
+    // 4. Branch Stock for all branches (0 initial quantity)
     const insertBranchStock = db.prepare(`
       INSERT INTO branch_stock (
         id, branch_id, product_type, denomination_id, quantity, cost_price, selling_price, low_stock_threshold, updated_at
@@ -114,24 +114,24 @@ async function seed() {
     `);
 
     for (const b of branches) {
-      // SIM stock per branch
-      insertBranchStock.run(`BS-${b.id}-SIM`, b.id, 'SIM', null, 200, 30.0, 50.0, 100);
+      // SIM stock per branch: 0 initial
+      insertBranchStock.run(`BS-${b.id}-SIM`, b.id, 'SIM', null, 0, 30.0, 50.0, 100);
 
-      // Scratch card stock per branch
+      // Scratch card stock per branch: 0 initial
       for (const d of denominations) {
         insertBranchStock.run(
           `BS-${b.id}-SC-${d.value}`,
           b.id,
           'SCRATCH_CARD',
           d.id,
-          100,
+          0,
           d.value * 0.9,
           d.value,
           50
         );
       }
     }
-    console.log('[KIMIYA DB] Branch Stocks seeded for 4 branches.');
+    console.log('[KIMIYA DB] Branch Stocks seeded with 0 quantity for all branches.');
 
     // 5. Root Administrator User (Only Admin is seeded; Admin creates all other users via the UI)
     const users = [
