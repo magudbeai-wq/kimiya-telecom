@@ -64,3 +64,23 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  const authResult = await requireAuth(req, ['ADMIN']);
+  if (authResult instanceof NextResponse) return authResult;
+
+  try {
+    const url = new URL(req.url);
+    const id = url.searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'User ID is required.' }, { status: 400 });
+    }
+
+    await UserService.deleteUser(id, authResult.user);
+    return NextResponse.json({ success: true, message: 'User deleted successfully.' });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+  }
+}
+

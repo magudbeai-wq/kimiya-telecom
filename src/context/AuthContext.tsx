@@ -145,18 +145,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: username.trim(), password }),
       });
-      const data = await res.json();
-      if (data.success && data.user) {
+
+      let data: any = null;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        return {
+          success: false,
+          error: !res.ok
+            ? `Server returned error (${res.status}). Please check server logs.`
+            : 'Unexpected server response format.',
+        };
+      }
+
+      if (data && data.success && data.user) {
         setUser(data.user);
         await refreshSession();
         router.push('/dashboard');
         return { success: true };
       }
-      return { success: false, error: data.error || 'Authentication failed' };
+      return { success: false, error: data?.error || 'Invalid username or password.' };
     } catch (err: any) {
-      return { success: false, error: err.message || 'Network error' };
+      return { success: false, error: err.message || 'Network communication error.' };
     }
   };
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Users, Plus, Edit2, CheckCircle2, AlertCircle, Shield, Building2, KeyRound } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, CheckCircle2, AlertCircle, Shield, Building2, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { UserRole } from '@/lib/types';
 
 export default function UsersPage() {
@@ -17,6 +17,7 @@ export default function UsersPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [role, setRole] = useState<UserRole>('SHOP_USER');
   const [branchId, setBranchId] = useState('');
 
@@ -25,6 +26,7 @@ export default function UsersPage() {
   const [editFullName, setEditFullName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [editRole, setEditRole] = useState<UserRole>('SHOP_USER');
   const [editBranchId, setEditBranchId] = useState('');
   const [editStatus, setEditStatus] = useState<'ACTIVE' | 'DISABLED'>('ACTIVE');
@@ -145,6 +147,27 @@ export default function UsersPage() {
     }
   };
 
+  const handleDeleteUser = async (u: any) => {
+    if (!window.confirm(`Are you sure you want to delete user account '@${u.username}' (${u.full_name})?`)) {
+      return;
+    }
+    try {
+      setMessage(null);
+      const res = await fetch(`/api/users?id=${u.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ type: 'success', text: data.message || `User '@${u.username}' was successfully deleted.` });
+      } else {
+        setMessage({ type: 'error', text: data.error });
+      }
+      await fetchUsersAndBranches();
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
@@ -242,21 +265,33 @@ export default function UsersPage() {
                   <td className="py-3 px-4 text-slate-400">{u.last_login_at || 'Never'}</td>
                   {user?.role === 'ADMIN' && (
                     <td className="py-3 px-4">
-                      <button
-                        onClick={() => {
-                          setEditUser(u);
-                          setEditFullName(u.full_name);
-                          setEditEmail(u.email);
-                          setEditPassword('');
-                          setEditRole(u.role);
-                          setEditBranchId(u.branch_id || (branches[0]?.id || ''));
-                          setEditStatus(u.status);
-                        }}
-                        className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                        Edit
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditUser(u);
+                            setEditFullName(u.full_name);
+                            setEditEmail(u.email);
+                            setEditPassword('');
+                            setEditRole(u.role);
+                            setEditBranchId(u.branch_id || (branches[0]?.id || ''));
+                            setEditStatus(u.status);
+                          }}
+                          className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                          Edit
+                        </button>
+                        {u.id !== user?.id && (
+                          <button
+                            onClick={() => handleDeleteUser(u)}
+                            className="px-2.5 py-1 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded text-[11px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1 transition-colors"
+                            title="Delete User"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -323,14 +358,24 @@ export default function UsersPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showCreatePassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Minimum 6 characters"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 pr-10 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 font-mono"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCreatePassword(!showCreatePassword)}
+                    className="absolute right-3 top-2.5 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
+                    title={showCreatePassword ? 'Hide Password' : 'View Password'}
+                  >
+                    {showCreatePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4 text-blue-500" />}
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -436,13 +481,23 @@ export default function UsersPage() {
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Change Password <span className="font-normal text-slate-400">(leave blank to keep current)</span>
                 </label>
-                <input
-                  type="password"
-                  value={editPassword}
-                  onChange={(e) => setEditPassword(e.target.value)}
-                  placeholder="Enter new password to update"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
-                />
+                <div className="relative">
+                  <input
+                    type={showEditPassword ? 'text' : 'password'}
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    placeholder="Enter new password to update"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 pr-10 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute right-3 top-2.5 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
+                    title={showEditPassword ? 'Hide Password' : 'View Password'}
+                  >
+                    {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4 text-blue-500" />}
+                  </button>
+                </div>
               </div>
 
               <div>

@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldCheck, UserCheck, KeyRound, Building2, AlertCircle } from 'lucide-react';
+import { ShieldCheck, UserCheck, KeyRound, Building2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -64,7 +65,7 @@ export default function LoginPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
+                placeholder="Enter username (e.g. Kimiya.telecom)"
                 className="w-full bg-slate-950/60 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                 required
               />
@@ -78,13 +79,21 @@ export default function LoginPage() {
             <div className="relative">
               <KeyRound className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-950/60 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                className="w-full bg-slate-950/60 border border-slate-700/80 rounded-xl pl-10 pr-11 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors font-mono"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-2.5 p-1 text-slate-400 hover:text-white transition-colors focus:outline-none"
+                title={showPassword ? 'Hide Password' : 'View Password'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4 text-blue-400 hover:text-blue-300" />}
+              </button>
             </div>
           </div>
 

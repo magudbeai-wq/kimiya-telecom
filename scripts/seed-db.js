@@ -10,7 +10,7 @@ async function seed() {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 
-  const defaultPasswordHash = await bcrypt.hash('Password@123', 10);
+  const defaultPasswordHash = await bcrypt.hash('Kimiya@112233', 10);
 
   db.transaction(() => {
     // 1. Branches
@@ -22,8 +22,13 @@ async function seed() {
     ];
 
     const insertBranch = db.prepare(`
-      INSERT OR REPLACE INTO branches (id, code, name, location, status, created_at, updated_at)
+      INSERT INTO branches (id, code, name, location, status, created_at, updated_at)
       VALUES (?, ?, ?, ?, 'ACTIVE', datetime('now', '+3 hours'), datetime('now', '+3 hours'))
+      ON CONFLICT(id) DO UPDATE SET
+        code = excluded.code,
+        name = excluded.name,
+        location = excluded.location,
+        updated_at = excluded.updated_at
     `);
 
     for (const b of branches) {
@@ -43,8 +48,11 @@ async function seed() {
     ];
 
     const insertDenom = db.prepare(`
-      INSERT OR REPLACE INTO scratch_denominations (id, denomination_value, is_active, display_order, created_at)
+      INSERT INTO scratch_denominations (id, denomination_value, is_active, display_order, created_at)
       VALUES (?, ?, 1, ?, datetime('now', '+3 hours'))
+      ON CONFLICT(id) DO UPDATE SET
+        denomination_value = excluded.denomination_value,
+        display_order = excluded.display_order
     `);
 
     for (const d of denominations) {
@@ -54,9 +62,15 @@ async function seed() {
 
     // 3. Central Store Stock
     const insertCentralStock = db.prepare(`
-      INSERT OR REPLACE INTO central_stock (
+      INSERT INTO central_stock (
         id, product_type, denomination_id, quantity, cost_price, selling_price, low_stock_threshold, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', '+3 hours'))
+      ON CONFLICT(id) DO UPDATE SET
+        quantity = excluded.quantity,
+        cost_price = excluded.cost_price,
+        selling_price = excluded.selling_price,
+        low_stock_threshold = excluded.low_stock_threshold,
+        updated_at = excluded.updated_at
     `);
 
     // SIM Cards in Central Store: 10,000 cards
@@ -88,9 +102,15 @@ async function seed() {
 
     // 4. Branch Stock for all branches
     const insertBranchStock = db.prepare(`
-      INSERT OR REPLACE INTO branch_stock (
+      INSERT INTO branch_stock (
         id, branch_id, product_type, denomination_id, quantity, cost_price, selling_price, low_stock_threshold, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', '+3 hours'))
+      ON CONFLICT(id) DO UPDATE SET
+        quantity = excluded.quantity,
+        cost_price = excluded.cost_price,
+        selling_price = excluded.selling_price,
+        low_stock_threshold = excluded.low_stock_threshold,
+        updated_at = excluded.updated_at
     `);
 
     for (const b of branches) {
@@ -113,68 +133,36 @@ async function seed() {
     }
     console.log('[KIMIYA DB] Branch Stocks seeded for 4 branches.');
 
-    // 5. Users
+    // 5. Root Administrator User (Only Admin is seeded; Admin creates all other users via the UI)
     const users = [
       {
         id: 'USER-ADMIN-01',
-        username: 'admin',
-        full_name: 'System Administrator',
+        username: 'Kimiya.telecom',
+        full_name: 'Kimiya Telecom Administrator',
         email: 'admin@kimiya.com',
         role: 'ADMIN',
         branch_id: null,
       },
-      {
-        id: 'USER-FINANCE-01',
-        username: 'finance',
-        full_name: 'Finance & Central Store Manager',
-        email: 'finance@kimiya.com',
-        role: 'FINANCE',
-        branch_id: null,
-      },
-      {
-        id: 'USER-SHOP-01',
-        username: 'ahmed_kar',
-        full_name: 'Ahmed Ali (Karamardha)',
-        email: 'ahmed.kar@kimiya.com',
-        role: 'SHOP_USER',
-        branch_id: 'BR-KAR',
-      },
-      {
-        id: 'USER-SHOP-02',
-        username: 'fatima_gar',
-        full_name: 'Fatima Hassan (Garabcase)',
-        email: 'fatima.gar@kimiya.com',
-        role: 'SHOP_USER',
-        branch_id: 'BR-GAR',
-      },
-      {
-        id: 'USER-SHOP-03',
-        username: 'hassan_dud1',
-        full_name: 'Hassan Mohamed (Dudihide 1)',
-        email: 'hassan.dud1@kimiya.com',
-        role: 'SHOP_USER',
-        branch_id: 'BR-DUD1',
-      },
-      {
-        id: 'USER-SHOP-04',
-        username: 'omar_dud2',
-        full_name: 'Omar Farah (Dudihide 2)',
-        email: 'omar.dud2@kimiya.com',
-        role: 'SHOP_USER',
-        branch_id: 'BR-DUD2',
-      },
     ];
 
     const insertUser = db.prepare(`
-      INSERT OR REPLACE INTO users (
+      INSERT INTO users (
         id, username, full_name, email, password_hash, role, branch_id, status, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE', datetime('now', '+3 hours'))
+      ON CONFLICT(id) DO UPDATE SET
+        username = excluded.username,
+        full_name = excluded.full_name,
+        email = excluded.email,
+        password_hash = excluded.password_hash,
+        role = excluded.role,
+        branch_id = excluded.branch_id,
+        status = excluded.status
     `);
 
     for (const u of users) {
       insertUser.run(u.id, u.username, u.full_name, u.email, defaultPasswordHash, u.role, u.branch_id);
     }
-    console.log('[KIMIYA DB] Users seeded.');
+    console.log('[KIMIYA DB] Root Admin user seeded.');
 
     // 6. System Settings
     const settings = [
@@ -188,8 +176,12 @@ async function seed() {
     ];
 
     const insertSetting = db.prepare(`
-      INSERT OR REPLACE INTO system_settings (key, value, description, updated_at)
+      INSERT INTO system_settings (key, value, description, updated_at)
       VALUES (?, ?, ?, datetime('now', '+3 hours'))
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        description = excluded.description,
+        updated_at = excluded.updated_at
     `);
 
     for (const s of settings) {

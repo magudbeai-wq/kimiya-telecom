@@ -221,4 +221,47 @@ export class UserService {
       return this.getUserById(id)!;
     });
   }
+
+  /**
+   * Delete or permanently remove a user (Admin only)
+   */
+  static async deleteUser(id: string, actor: AuthSessionUser): Promise<void> {
+    if (id === actor.id) {
+      throw new Error('You cannot delete your own account.');
+    }
+
+    const user = this.getUserById(id);
+    if (!user) {
+      throw new Error(`User #${id} not found.`);
+    }
+
+    return runImmediateTransaction((dbInstance) => {
+      try {
+        dbInstance.prepare('DELETE FROM users WHERE id = ?').run(id);
+      } catch (err: any) {
+        // If foreign key constraint exists (e.g. historical sales, audits, or transfers), disable instead
+        dbInstance.prepare("UPDATE users SET status = 'DISABLED' WHERE id = ?").run(id);
+        throw new Error(
+          `User '${user.full_name}' has associated transactional history and cannot be completely deleted. The account has been set to DISABLED.`
+        );
+      }
+
+      AuditService.log({
+        action: 'USER_DELETED',
+        entityType: 'USER',
+        entityId: id,
+        actorUserId: actor.id,
+        actorRole: actor.role,
+        actorBranchId: null,
+        oldValues: {
+          username: user.username,
+          fullName: user.full_name,
+          email: user.email,
+          role: user.role,
+          branchId: user.branch_id,
+        },
+      });
+    });
+  }
 }
+
