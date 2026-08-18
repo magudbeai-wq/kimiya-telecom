@@ -52,6 +52,34 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
 
+  // Auto-close mobile drawer when route changes
+  React.useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Touch swipe gesture handlers (swipe right from left edge to open, swipe left to close)
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const deltaX = touchEndX - touchStartX;
+
+    // Swipe right from left edge (< 60px) to slide open menu
+    if (!mobileOpen && touchStartX < 60 && deltaX > 50) {
+      setMobileOpen(true);
+    }
+    // Swipe left to close drawer
+    else if (mobileOpen && deltaX < -50) {
+      setMobileOpen(false);
+    }
+    setTouchStartX(null);
+  };
+
   // If on login page or unauthenticated, show raw page
   if (pathname === '/login' || (!user && !loading)) {
     return <>{children}</>;
@@ -122,7 +150,115 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+    <div
+      className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 relative"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* MOBILE BACKDROP OVERLAY */}
+      <div
+        onClick={() => setMobileOpen(false)}
+        className={`fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden transition-opacity duration-300 ${
+          mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        aria-hidden="true"
+      />
+
+      {/* MOBILE SLIDING SIDEBAR DRAWER */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl transition-transform duration-300 ease-out lg:hidden ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Mobile Header with Close Button */}
+        <div className="flex items-center justify-between px-5 h-16 border-b border-slate-200 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black shadow-md shadow-blue-500/25">
+              KT
+            </div>
+            <div>
+              <h1 className="text-sm font-black tracking-tight text-slate-900 dark:text-white">KIMIYA TELECOM</h1>
+              <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase">
+                {user?.role === 'ADMIN'
+                  ? 'Headquarters Admin'
+                  : user?.role === 'FINANCE'
+                  ? 'Central Finance'
+                  : user?.branch_name || 'Branch Terminal'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            title="Close Menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Mobile Navigation Links */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500'}`} />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge && item.badge > 0 ? (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                    {item.badge}
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Mobile User Profile & Logout */}
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shrink-0">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/profile"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2.5 overflow-hidden flex-1 min-w-0"
+              title="View profile and security settings"
+            >
+              <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
+                {user?.full_name?.charAt(0) || 'U'}
+              </div>
+              <div className="truncate">
+                <p className="text-xs font-bold truncate text-slate-900 dark:text-white">{user?.full_name}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  @{user?.username} &bull; {user?.role}
+                </p>
+              </div>
+            </Link>
+            <button
+              onClick={() => {
+                setMobileOpen(false);
+                logout();
+              }}
+              title="Logout"
+              className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition-colors shrink-0"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
       {/* Sidebar Desktop */}
       <aside className="hidden lg:flex w-64 flex-col fixed inset-y-0 z-30 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-colors shadow-sm">
         {/* Brand Header */}
@@ -209,13 +345,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col lg:pl-64">
         {/* Top Navbar */}
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 sm:px-6">
-          {/* Left: Mobile toggle & Branch Location Badge */}
-          <div className="flex items-center gap-3">
+          {/* Left: Mobile toggle (3 ticks hamburger) & Branch Location Badge */}
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="lg:hidden p-2 rounded-xl text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Toggle navigation menu"
+              title="Open Navigation Menu"
             >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileOpen ? <X className="h-5 w-5 text-rose-500" /> : <Menu className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
             </button>
 
             <div className="flex items-center gap-2">
